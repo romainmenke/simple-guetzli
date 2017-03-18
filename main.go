@@ -37,7 +37,8 @@ func main() {
 	}
 
 	logs := getLogs(logDir)
-	logC := make(chan *guetzliLog, len(files))
+	logC := make(chan *guetzliLog)
+	var jobCounter int
 
 	var wg sync.WaitGroup
 
@@ -66,6 +67,7 @@ FILE_ITERATOR:
 		}
 
 		wg.Add(1)
+		jobCounter++
 
 		go func() {
 			defer wg.Done()
@@ -73,14 +75,14 @@ FILE_ITERATOR:
 		}()
 	}
 
-	wg.Wait()
-
-	for _ = range files {
+	for i := 0; i < jobCounter; i++ {
 		l := <-logC
 		if l != nil {
 			logs[l.Path] = l
 		}
 	}
+
+	wg.Wait()
 
 	saveLogs(logs, logDir)
 }
