@@ -20,7 +20,7 @@ func main() {
 
 	source := flag.String("source", "./", "source directory")
 	out := flag.String("out", "./", "output directory")
-	log := flag.String("log", "./", "log directory")
+	log := flag.String("log", "./", "log directory, the log is used to prevent duplicate compressions")
 	level := flag.Int("level", 84, "compression level")
 	flag.Parse()
 
