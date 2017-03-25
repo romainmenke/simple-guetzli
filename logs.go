@@ -5,11 +5,9 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
-	"os/exec"
 	"time"
 )
 
@@ -87,24 +85,4 @@ func sha1ForFile(filePath string) string {
 	returnSHA1String = hex.EncodeToString(hashInBytes)
 
 	return returnSHA1String
-}
-
-func guetzli(j *job) error {
-	args := []string{
-		"--quality",
-		fmt.Sprintf("%d", j.args.quality),
-	}
-
-	if j.args.verbose {
-		args = append(args, "--verbose")
-	}
-
-	args = append(args, j.args.source+j.fileName)
-	args = append(args, j.args.output+j.fileName)
-
-	_, err := exec.Command("guetzli", args...).Output()
-	if err != nil {
-		return err
-	}
-	return nil
 }

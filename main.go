@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"sync"
 
 	"github.com/mgutz/ansi"
@@ -126,6 +127,26 @@ func execute(j *job) *guetzliLog {
 		Sha1:    sha,
 		Version: j.args.version,
 	}
+}
+
+func guetzli(j *job) error {
+	args := []string{
+		"--quality",
+		fmt.Sprintf("%d", j.args.quality),
+	}
+
+	if j.args.verbose {
+		args = append(args, "--verbose")
+	}
+
+	args = append(args, j.args.source+j.fileName)
+	args = append(args, j.args.output+j.fileName)
+
+	_, err := exec.Command("guetzli", args...).Output()
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func writeFile(content []byte, fileName string, out string, quality int) {
