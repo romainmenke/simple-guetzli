@@ -10,12 +10,17 @@ This requires : [Guetzli](https://github.com/google/guetzli)
 
 ### Options
 
-- `-h`            : help
-- `-source`       : source directory
-- `-out`          : output directory
-- `-log`          : log directory
-- `-level`        : compression level
-- `trailing args` : exclusion -> simple `must not contain` logic
+```
+Flags:
+      --help        Show context-sensitive help (also try --help-long and --help-man).
+  -q, --quality=84  Quality in units equivalent to libjpeg quality
+  -v, --verbose     Verbose mode
+
+Args:
+  [<source>]  Source directory
+  [<output>]  Output directory
+  [<log>]     Log directory, the log is used to prevent duplicate compressions
+```
 
 ---
 

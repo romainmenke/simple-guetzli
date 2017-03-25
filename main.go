@@ -1,69 +1,49 @@
 package main
 
 import (
-	"bytes"
-	"crypto/sha1"
-	"encoding/hex"
-	"encoding/json"
-	"flag"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"os"
-	"os/exec"
-	"strings"
 	"sync"
-	"time"
+
+	"github.com/mgutz/ansi"
 )
 
 func main() {
 
-	source := flag.String("source", "./", "source directory")
-	out := flag.String("out", "./", "output directory")
-	log := flag.String("log", "./", "log directory, the log is used to prevent duplicate compressions")
-	level := flag.Int("level", 84, "compression level")
-	flag.Parse()
+	a := parseArgs()
+	a = preflight(a)
 
-	sourceDir := strings.TrimSuffix(*source, "/") + "/"
-	outDir := strings.TrimSuffix(*out, "/") + "/"
-	logDir := strings.TrimSuffix(*log, "/") + "/"
-	createIfMissing(outDir)
-
-	exclude := flag.Args()
-
-	files, err := ioutil.ReadDir(sourceDir)
+	files, err := ioutil.ReadDir(a.source)
 	if err != nil {
 		panic(err)
 	}
 
-	logs := getLogs(logDir)
+	logs := getLogs(a.log)
 	logC := make(chan *guetzliLog)
 	var jobCounter int
+
+	version, err := guetzliVersion()
+	if err != nil {
+		panic(err)
+	}
 
 	var wg sync.WaitGroup
 
 FILE_ITERATOR:
-	for _, f := range files {
-		if !isFile(sourceDir + f.Name()) {
+	for index, f := range files {
+		if !isFile(a.source + f.Name()) {
 			continue FILE_ITERATOR
 		}
 
-		for _, exc := range exclude {
-			if strings.Contains(f.Name(), exc) {
-				continue FILE_ITERATOR
-			}
-		}
-
 		j := job{
-			sourceDir: sourceDir,
-			outDir:    outDir,
-			fileName:  f.Name(),
-			level:     *level,
-			log:       logs[sourceDir+f.Name()],
+			fileName: f.Name(),
+			log:      logs[a.source+f.Name()],
+			args:     a,
 		}
 
-		if j.level < 84 {
-			j.level = 84
+		if a.verbose {
+			j.color = ansi.ColorFunc(colors[index%len(colors)])
 		}
 
 		wg.Add(1)
@@ -84,26 +64,50 @@ FILE_ITERATOR:
 
 	wg.Wait()
 
-	saveLogs(logs, logDir)
+	saveLogs(version, logs, a.log)
 }
 
 type job struct {
-	sourceDir string
-	outDir    string
-	fileName  string
-	level     int
-	log       *guetzliLog
+	fileName string
+	log      *guetzliLog
+	args     *args
+	color    ColorFunc
 }
 
 func execute(j *job) *guetzliLog {
-	modTime := timeModified(j.sourceDir + j.fileName)
+
+	var imgChanged bool
+	var settingsChanged bool
+
+	if j.log == nil {
+		settingsChanged = true
+		imgChanged = true
+	}
+
+	if j.log != nil && j.log.Version != j.args.version {
+		settingsChanged = true
+	}
+
+	if j.log != nil && j.log.Quality != j.args.quality {
+		settingsChanged = true
+	}
+
+	modTime := timeModified(j.args.source + j.fileName)
 	if j.log != nil && modTime.Equal(j.log.ModTime) {
+		imgChanged = true
+	}
+
+	sha := sha1ForFile(j.args.source + j.fileName)
+	if j.log != nil && sha != j.log.Sha1 {
+		imgChanged = true
+	}
+
+	if !imgChanged && !settingsChanged {
 		return nil
 	}
 
-	sha := sha1ForFile(j.sourceDir + j.fileName)
-	if j.log != nil && sha == j.log.Sha1 {
-		return nil
+	if j.args.verbose {
+		fmt.Println(j.color(fmt.Sprintf("Processing  =>  %s", j.args.source+j.fileName)))
 	}
 
 	err := guetzli(j)
@@ -111,26 +115,24 @@ func execute(j *job) *guetzliLog {
 		panic(err)
 	}
 
+	if j.args.verbose {
+		fmt.Println(j.color(fmt.Sprintf("Done        =>  %s", j.args.source+j.fileName)))
+	}
+
 	return &guetzliLog{
+		Quality: j.args.quality,
 		ModTime: modTime,
+		Path:    j.args.source + j.fileName,
 		Sha1:    sha,
-		Path:    j.sourceDir + j.fileName,
+		Version: j.args.version,
 	}
 }
 
-type guetzliLog struct {
-	ModTime time.Time `json:"revisionTime"`
-	Sha1    string    `json:"checksumSHA1"`
-	Path    string    `json:"path"`
-}
-
-func writeFile(content []byte, fileName string, out string, level int) {
-
+func writeFile(content []byte, fileName string, out string, quality int) {
 	err := ioutil.WriteFile(out+fileName, content, 0644)
 	if err != nil {
 		panic(err)
 	}
-
 }
 
 func isFile(path string) bool {
@@ -142,102 +144,12 @@ func isFile(path string) bool {
 	return !fileInfo.IsDir()
 }
 
-func createIfMissing(path string) {
-	_, err := os.Stat(path)
-	if os.IsNotExist(err) {
-		os.Mkdir(path, os.ModePerm)
-	}
-}
+type ColorFunc func(string) string
 
-func getLogs(path string) map[string]*guetzliLog {
-	buf := bytes.NewBuffer(nil)
-	file, err := os.Open(path + "guetzli.json")
-	if err != nil {
-		return make(map[string]*guetzliLog)
-	}
-	_, err = io.Copy(buf, file)
-	if err != nil {
-		return make(map[string]*guetzliLog)
-	}
-	file.Close()
-	logs := make(map[string]*guetzliLog)
-
-	err = json.Unmarshal(buf.Bytes(), &logs)
-	if err != nil {
-		return make(map[string]*guetzliLog)
-	}
-	return logs
-}
-
-func saveLogs(logs map[string]*guetzliLog, path string) {
-
-	b, err := json.Marshal(logs)
-	if err != nil {
-		panic(err)
-	}
-
-	var out bytes.Buffer
-	err = json.Indent(&out, b, "", "  ")
-	if err != nil {
-		panic(err)
-	}
-
-	err = ioutil.WriteFile(path+"guetzli.json", out.Bytes(), 0644)
-	if err != nil {
-		panic(err)
-	}
-
-}
-
-func timeModified(filePath string) time.Time {
-	info, err := os.Stat(filePath)
-	if err != nil {
-		panic(err)
-	}
-	return info.ModTime()
-}
-
-func sha1ForFile(filePath string) string {
-	//Initialize variable returnMD5String now in case an error has to be returned
-	var returnSHA1String string
-
-	//Open the passed argument and check for any error
-	file, err := os.Open(filePath)
-	if err != nil {
-		panic(err)
-	}
-
-	//Tell the program to call the following function when the current function returns
-	defer file.Close()
-
-	//Open a new hash interface to write to
-	hash := sha1.New()
-
-	//Copy the file in the hash interface and check for any error
-	if _, err = io.Copy(hash, file); err != nil {
-		panic(err)
-	}
-
-	//Get the 16 bytes hash
-	hashInBytes := hash.Sum(nil)[:20]
-
-	//Convert the bytes to a string
-	returnSHA1String = hex.EncodeToString(hashInBytes)
-
-	return returnSHA1String
-
-}
-
-func guetzli(j *job) error {
-	args := []string{
-		"--quality",
-		fmt.Sprintf("%d", j.level),
-		j.sourceDir + j.fileName,
-		j.outDir + j.fileName,
-	}
-	_, err := exec.Command("guetzli", args...).Output()
-	if err != nil {
-		return err
-	}
-	return nil
+var colors = []string{
+	"green",
+	"yellow",
+	"blue",
+	"magenta",
+	"cyan",
 }
