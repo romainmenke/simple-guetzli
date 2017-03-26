@@ -5,23 +5,23 @@ import (
 	"os"
 )
 
-func preflight(a *args) *args {
+func preflight(s *settings) *settings {
 
-	createIfMissing(a.log)
-	createIfMissing(a.output)
+	createIfMissing(s.log)
+	createIfMissing(s.output)
 
 	version, err := guetzliVersion()
 	if err != nil {
 		panic(err)
 	}
 
-	a.version = version
+	s.version = version
 
-	if a.verbose {
-		fmt.Printf("Version  =>  %s\n", a.version)
+	if s.verbose {
+		fmt.Printf("Version  =>  %s\n", s.version)
 	}
 
-	return a
+	return s
 
 }
 

@@ -1,27 +1,28 @@
 package main
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
-	"os/exec"
+	"os/signal"
 	"sync"
+	"syscall"
 
 	"github.com/mgutz/ansi"
 )
 
 func main() {
 
-	a := parseArgs()
-	a = preflight(a)
+	settings := parseArgs()
+	settings = preflight(settings)
 
-	files, err := ioutil.ReadDir(a.source)
+	logger := newLogger(settings.verbose)
+
+	files, err := ioutil.ReadDir(settings.source)
 	if err != nil {
 		panic(err)
 	}
 
-	logs := getLogs(a.log)
-	logC := make(chan *guetzliLog)
+	reports := getReports(settings.log)
 	var jobCounter int
 
 	version, err := guetzliVersion()
@@ -29,148 +30,64 @@ func main() {
 		panic(err)
 	}
 
+	jobs := []*job{}
+
 	var wg sync.WaitGroup
 
 FILE_ITERATOR:
 	for index, f := range files {
-		if !isFile(a.source + f.Name()) {
+		if !isFile(settings.source + f.Name()) {
 			continue FILE_ITERATOR
 		}
 
-		j := job{
+		j := &job{
 			fileName: f.Name(),
-			log:      logs[a.source+f.Name()],
-			args:     a,
+			report:   reports[settings.source+f.Name()],
+			settings: settings,
+			quit:     make(chan bool, 1),
+			done:     make(chan bool, 1),
+			logger:   logger,
 		}
 
-		if a.verbose {
-			j.color = ansi.ColorFunc(colors[index%len(colors)])
+		j.color = ansi.ColorFunc(colors[index%len(colors)])
+
+		if !needsProc(j) {
+			reports[j.report.Path] = j.report
+			continue FILE_ITERATOR
 		}
 
 		wg.Add(1)
 		jobCounter++
 
+		jobs = append(jobs, j)
+
 		go func() {
-			defer wg.Done()
-			logC <- execute(&j)
+			work(j)
 		}()
+
+		go func() {
+			select {
+			case success := <-j.done:
+				if success {
+					reports[j.report.Path] = j.report
+				}
+				wg.Done()
+				break
+			}
+		}()
+
 	}
 
-	for i := 0; i < jobCounter; i++ {
-		l := <-logC
-		if l != nil {
-			logs[l.Path] = l
+	signalChannel := make(chan os.Signal, 2)
+	signal.Notify(signalChannel, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		_ = <-signalChannel
+		for _, j := range jobs {
+			j.quit <- true
 		}
-	}
+	}()
 
 	wg.Wait()
 
-	saveLogs(version, logs, a.log)
-}
-
-type job struct {
-	fileName string
-	log      *guetzliLog
-	args     *args
-	color    ColorFunc
-}
-
-func execute(j *job) *guetzliLog {
-
-	var imgChanged bool
-	var settingsChanged bool
-
-	if j.log == nil {
-		settingsChanged = true
-		imgChanged = true
-	}
-
-	if j.log != nil && j.log.Version != j.args.version {
-		settingsChanged = true
-	}
-
-	if j.log != nil && j.log.Quality != j.args.quality {
-		settingsChanged = true
-	}
-
-	modTime := timeModified(j.args.source + j.fileName)
-	if j.log != nil && modTime.Equal(j.log.ModTime) {
-		imgChanged = true
-	}
-
-	sha := sha1ForFile(j.args.source + j.fileName)
-	if j.log != nil && sha != j.log.Sha1 {
-		imgChanged = true
-	}
-
-	if !imgChanged && !settingsChanged {
-		return nil
-	}
-
-	if j.args.verbose {
-		fmt.Println(j.color(fmt.Sprintf("Processing  =>  %s", j.args.source+j.fileName)))
-	}
-
-	err := guetzli(j)
-	if err != nil {
-		panic(err)
-	}
-
-	if j.args.verbose {
-		fmt.Println(j.color(fmt.Sprintf("Done        =>  %s", j.args.source+j.fileName)))
-	}
-
-	return &guetzliLog{
-		Quality: j.args.quality,
-		ModTime: modTime,
-		Path:    j.args.source + j.fileName,
-		Sha1:    sha,
-		Version: j.args.version,
-	}
-}
-
-func guetzli(j *job) error {
-	args := []string{
-		"--quality",
-		fmt.Sprintf("%d", j.args.quality),
-	}
-
-	if j.args.verbose {
-		args = append(args, "--verbose")
-	}
-
-	args = append(args, j.args.source+j.fileName)
-	args = append(args, j.args.output+j.fileName)
-
-	_, err := exec.Command("guetzli", args...).Output()
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func writeFile(content []byte, fileName string, out string, quality int) {
-	err := ioutil.WriteFile(out+fileName, content, 0644)
-	if err != nil {
-		panic(err)
-	}
-}
-
-func isFile(path string) bool {
-	fileInfo, err := os.Stat(path)
-	if err != nil {
-		fmt.Println(err)
-		return false
-	}
-	return !fileInfo.IsDir()
-}
-
-type ColorFunc func(string) string
-
-var colors = []string{
-	"green",
-	"yellow",
-	"blue",
-	"magenta",
-	"cyan",
+	saveReports(version, reports, settings.log)
 }

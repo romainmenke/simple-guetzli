@@ -7,7 +7,7 @@ import (
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 )
 
-func parseArgs() *args {
+func parseArgs() *settings {
 	quality := kingpin.Flag("quality", "Quality in units equivalent to libjpeg quality").Short('q').Default("84").Int()
 	verbose := kingpin.Flag("verbose", "Verbose mode").Short('v').Bool()
 
@@ -29,7 +29,7 @@ func parseArgs() *args {
 	*output = strings.TrimSuffix(*output, "/") + "/"
 	*source = strings.TrimSuffix(*source, "/") + "/"
 
-	a := args{
+	s := &settings{
 		quality: *quality,
 		verbose: *verbose,
 
@@ -38,17 +38,17 @@ func parseArgs() *args {
 		source: *source,
 	}
 
-	if a.verbose {
-		fmt.Printf("Quality  =>  %d\n", a.quality)
-		fmt.Printf("Source   =>  %s\n", a.source)
-		fmt.Printf("Output   =>  %s\n", a.output)
-		fmt.Printf("Log      =>  %s\n", a.log)
+	if s.verbose {
+		fmt.Printf("Quality  =>  %d\n", s.quality)
+		fmt.Printf("Source   =>  %s\n", s.source)
+		fmt.Printf("Output   =>  %s\n", s.output)
+		fmt.Printf("Log      =>  %s\n", s.log)
 	}
 
-	return &a
+	return s
 }
 
-type args struct {
+type settings struct {
 	quality int
 	verbose bool
 

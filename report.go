@@ -5,13 +5,14 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
 	"time"
 )
 
-type guetzliLog struct {
+type guetzliReport struct {
 	Quality int       `json:"quality"`
 	ModTime time.Time `json:"revisionTime"`
 	Path    string    `json:"path"`
@@ -19,31 +20,31 @@ type guetzliLog struct {
 	Version string    `json:"guetzli-version"`
 }
 
-func getLogs(path string) map[string]*guetzliLog {
+func getReports(path string) map[string]*guetzliReport {
 	buf := bytes.NewBuffer(nil)
 	file, err := os.Open(path + "guetzli.json")
 	if err != nil {
-		return make(map[string]*guetzliLog)
+		return make(map[string]*guetzliReport)
 	}
 
 	_, err = io.Copy(buf, file)
 	if err != nil {
-		return make(map[string]*guetzliLog)
+		return make(map[string]*guetzliReport)
 	}
 
 	file.Close()
-	logs := make(map[string]*guetzliLog)
+	reports := make(map[string]*guetzliReport)
 
-	err = json.Unmarshal(buf.Bytes(), &logs)
+	err = json.Unmarshal(buf.Bytes(), &reports)
 	if err != nil {
-		return make(map[string]*guetzliLog)
+		return make(map[string]*guetzliReport)
 	}
 
-	return logs
+	return reports
 }
 
-func saveLogs(version string, logs map[string]*guetzliLog, path string) {
-	b, err := json.Marshal(logs)
+func saveReports(version string, reports map[string]*guetzliReport, path string) {
+	b, err := json.Marshal(reports)
 	if err != nil {
 		panic(err)
 	}
@@ -85,4 +86,20 @@ func sha1ForFile(filePath string) string {
 	returnSHA1String = hex.EncodeToString(hashInBytes)
 
 	return returnSHA1String
+}
+
+func writeFile(content []byte, fileName string, out string, quality int) {
+	err := ioutil.WriteFile(out+fileName, content, 0644)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func isFile(path string) bool {
+	fileInfo, err := os.Stat(path)
+	if err != nil {
+		fmt.Println(err)
+		return false
+	}
+	return !fileInfo.IsDir()
 }
