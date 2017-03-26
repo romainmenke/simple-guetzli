@@ -53,6 +53,7 @@ FILE_ITERATOR:
 
 		if !needsProc(j) {
 			reports[j.report.Path] = j.report
+			j.logger.log(logForJob(j)("- skipped"))
 			continue FILE_ITERATOR
 		}
 

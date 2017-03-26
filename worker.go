@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"os/exec"
 )
@@ -39,8 +40,13 @@ func work(j *job) {
 	cmd.Stdout = &outb
 	cmd.Stderr = &errb
 
-	j.logger.log(logForJob(j)("start\n"))
-	cmd.Start()
+	j.logger.log(logForJob(j)("- start"))
+	err := cmd.Start()
+	if err != nil {
+		j.logger.log(errors.New(logForJob(j)(err.Error())))
+		j.done <- false
+		return
+	}
 
 	done := make(chan error, 1)
 	go func() {
@@ -51,15 +57,14 @@ func work(j *job) {
 	case <-j.quit:
 		err := cmd.Process.Kill()
 		if err != nil {
-			j.logger.log(logForJob(j)(err.Error()))
+			j.logger.log(errors.New(logForJob(j)(err.Error())))
 		}
-
-		j.logger.log(logForJob(j)("cancelled\n"))
+		j.logger.log(logForJob(j)("- cancelled"))
 		j.done <- false
 		break
 	case err := <-done:
 		if err != nil {
-			j.logger.log(logForJob(j)(errb.String()))
+			j.logger.log(errors.New(logForJob(j)(errb.String())))
 			j.done <- false
 		} else {
 			j.logger.log(logForJob(j)(outb.String()))

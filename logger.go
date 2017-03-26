@@ -6,20 +6,25 @@ import (
 )
 
 type logger struct {
-	pipe    chan string
+	pipe    chan interface{}
 	verbose bool
 }
 
 func newLogger(verbose bool) *logger {
 	l := &logger{
-		pipe:    make(chan string),
+		pipe:    make(chan interface{}),
 		verbose: verbose,
 	}
 
 	go func() {
 		for s := range l.pipe {
-			if l.verbose {
-				fmt.Print(s)
+			switch s.(type) {
+			case error:
+				fmt.Println(s)
+			default:
+				if l.verbose {
+					fmt.Println(s)
+				}
 			}
 		}
 	}()
@@ -31,7 +36,7 @@ func (l *logger) Close() {
 	close(l.pipe)
 }
 
-func (l *logger) log(s string) {
+func (l *logger) log(s interface{}) {
 	l.pipe <- s
 }
 
