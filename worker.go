@@ -17,7 +17,7 @@ type job struct {
 	done     chan bool
 }
 
-func work(j *job) {
+func do(j *job) {
 	var (
 		outb bytes.Buffer
 		errb bytes.Buffer

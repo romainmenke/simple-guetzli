@@ -15,6 +15,7 @@ Flags:
       --help        Show context-sensitive help (also try --help-long and --help-man).
   -q, --quality=84  Quality in units equivalent to libjpeg quality
   -v, --verbose     Verbose mode
+  -t, --threads=3   Max concurrent threads
 
 Args:
   [<source>]  Source directory

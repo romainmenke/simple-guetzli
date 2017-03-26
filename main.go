@@ -23,7 +23,6 @@ func main() {
 	}
 
 	reports := getReports(settings.log)
-	var jobCounter int
 
 	version, err := guetzliVersion()
 	if err != nil {
@@ -31,8 +30,6 @@ func main() {
 	}
 
 	jobs := []*job{}
-
-	var wg sync.WaitGroup
 
 FILE_ITERATOR:
 	for index, f := range files {
@@ -57,34 +54,51 @@ FILE_ITERATOR:
 			continue FILE_ITERATOR
 		}
 
-		wg.Add(1)
-		jobCounter++
-
 		jobs = append(jobs, j)
+	}
 
-		go func() {
-			work(j)
-		}()
+	jobsQueue := make(chan *job, len(jobs))
 
+	for _, j := range jobs {
+		jobsQueue <- j
+	}
+
+	var wg sync.WaitGroup
+	var cancels []chan bool
+	for i := 0; i < settings.maxThreads; i++ {
+		wg.Add(1)
 		go func() {
-			select {
-			case success := <-j.done:
-				if success {
-					reports[j.report.Path] = j.report
+
+		JOB_QUEUE:
+			for j := range jobsQueue {
+
+				cancel := make(chan bool, 1)
+				cancels = append(cancels, cancel)
+
+				go func() {
+					do(j)
+				}()
+
+				select {
+				case success := <-j.done:
+					if success {
+						reports[j.report.Path] = j.report
+					}
+				case <-cancel:
+					j.quit <- true
+					break JOB_QUEUE
 				}
-				wg.Done()
-				break
 			}
+			wg.Done()
 		}()
-
 	}
 
 	signalChannel := make(chan os.Signal, 2)
 	signal.Notify(signalChannel, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		_ = <-signalChannel
-		for _, j := range jobs {
-			j.quit <- true
+		for _, c := range cancels {
+			close(c)
 		}
 	}()
 

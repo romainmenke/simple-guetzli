@@ -10,6 +10,7 @@ import (
 func parseArgs() *settings {
 	quality := kingpin.Flag("quality", "Quality in units equivalent to libjpeg quality").Short('q').Default("84").Int()
 	verbose := kingpin.Flag("verbose", "Verbose mode").Short('v').Bool()
+	maxThreads := kingpin.Flag("threads", "Max concurrent threads").Short('t').Default("3").Int()
 
 	source := kingpin.Arg("source", "Source directory").Default("./").String()
 	output := kingpin.Arg("output", "Output directory").Default("./").String()
@@ -36,6 +37,8 @@ func parseArgs() *settings {
 		log:    *log,
 		output: *output,
 		source: *source,
+
+		maxThreads: *maxThreads,
 	}
 
 	if s.verbose {
@@ -56,5 +59,6 @@ type settings struct {
 	output string
 	source string
 
-	version string
+	version    string
+	maxThreads int
 }
