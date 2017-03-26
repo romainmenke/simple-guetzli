@@ -13,7 +13,7 @@ This requires : [Guetzli](https://github.com/google/guetzli)
 ```
 Flags:
       --help           Show context-sensitive help (also try --help-long and --help-man).
-  -q, --quality=84     Quality in units equivalent to libjpeg quality
+  -q, --quality=95     Quality in units equivalent to libjpeg quality
       --verbose        Verbose mode
   -f, --force          Force recompression
       --force-quality  Force recompression if quality changed

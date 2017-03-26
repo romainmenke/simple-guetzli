@@ -9,7 +9,7 @@ import (
 )
 
 func parseArgs() *settings {
-	quality := kingpin.Flag("quality", "Quality in units equivalent to libjpeg quality").Short('q').Default("84").Int()
+	quality := kingpin.Flag("quality", "Quality in units equivalent to libjpeg quality").Short('q').Default("95").Int()
 	verbose := kingpin.Flag("verbose", "Verbose mode").Bool()
 	force := kingpin.Flag("force", "Force recompression").Short('f').Bool()
 	forceQuality := kingpin.Flag("force-quality", "Force recompression if quality changed").Bool()
