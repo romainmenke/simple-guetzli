@@ -25,9 +25,14 @@ func do(j *job) {
 
 	args := []string{
 		"--quality",
-		fmt.Sprintf("%d", j.settings.quality),
+		fmt.Sprint(j.settings.quality),
+		"--memlimit",
+		fmt.Sprint(j.settings.memlimit),
 	}
 
+	if j.settings.nomemlimit {
+		args = append(args, "--nomemlimit")
+	}
 	if j.settings.verbose {
 		args = append(args, "--verbose")
 	}

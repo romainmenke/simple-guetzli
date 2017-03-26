@@ -13,11 +13,13 @@ This requires : [Guetzli](https://github.com/google/guetzli)
 ```
 Flags:
       --help           Show context-sensitive help (also try --help-long and --help-man).
-  -q, --quality=95     Quality in units equivalent to libjpeg quality
-      --verbose        Verbose mode
+  -q, --quality=95     Visual quality to aim for, expressed as a JPEG quality value. Default value is 95.
+      --verbose        Print a verbose trace of all attempts to standard output.
+  -m, --memlimit=6000  Memory limit in MB. Guetzli will fail if unable to stay under the limit. Default limit is 6000
+      --nomemlimit     Do not limit memory usage.
   -f, --force          Force recompression
       --force-quality  Force recompression if quality changed
-  -t, --threads=3      Max concurrent threads
+  -t, --threads=3      Max concurrent threads. Default limit is 3
   -v, --version        Guetzli Version
 
 Args:
