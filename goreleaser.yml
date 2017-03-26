@@ -1,0 +1,11 @@
+# goreleaser.yml
+# Build customization
+build:
+  main: ./...
+  binary: simple-guetzli
+  goos:
+    - windows
+    - darwin
+    - linux
+  goarch:
+    - amd64
