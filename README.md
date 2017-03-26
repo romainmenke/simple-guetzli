@@ -14,10 +14,11 @@ This requires : [Guetzli](https://github.com/google/guetzli)
 Flags:
       --help           Show context-sensitive help (also try --help-long and --help-man).
   -q, --quality=84     Quality in units equivalent to libjpeg quality
-  -v, --verbose        Verbose mode
+      --verbose        Verbose mode
   -f, --force          Force recompression
       --force-quality  Force recompression if quality changed
   -t, --threads=3      Max concurrent threads
+  -v, --version        Guetzli Version
 
 Args:
   [<source>]  Source directory
@@ -37,5 +38,10 @@ In short :
 - compresses an entire folder at once
 - executes compressions in parallel
 - tracks what has been compressed
+
+Useful :
+
+- cancel at any time, finished compressions will not need to be redone.
+- manage max threads.
 
 Enjoy!
