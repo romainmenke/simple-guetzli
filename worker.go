@@ -9,7 +9,7 @@ import (
 
 type job struct {
 	fileName string
-	report   *guetzliReport
+	report   guetzliReport
 	settings *settings
 	color    colorFunc
 	logger   *logger

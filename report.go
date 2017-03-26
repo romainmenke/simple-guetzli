@@ -20,30 +20,34 @@ type guetzliReport struct {
 	Version string    `json:"guetzli-version"`
 }
 
-func getReports(path string) map[string]*guetzliReport {
+func (r guetzliReport) Empty() bool {
+	return r.Quality == 0 && r.ModTime.IsZero() && r.Path == "" && r.Sha1 == "" && r.Version == ""
+}
+
+func getReports(path string) map[string]guetzliReport {
 	buf := bytes.NewBuffer(nil)
 	file, err := os.Open(path + "guetzli.json")
 	if err != nil {
-		return make(map[string]*guetzliReport)
+		return make(map[string]guetzliReport)
 	}
 
 	_, err = io.Copy(buf, file)
 	if err != nil {
-		return make(map[string]*guetzliReport)
+		return make(map[string]guetzliReport)
 	}
 
 	file.Close()
-	reports := make(map[string]*guetzliReport)
+	reports := make(map[string]guetzliReport)
 
 	err = json.Unmarshal(buf.Bytes(), &reports)
 	if err != nil {
-		return make(map[string]*guetzliReport)
+		return make(map[string]guetzliReport)
 	}
 
 	return reports
 }
 
-func saveReports(version string, reports map[string]*guetzliReport, path string) {
+func saveReports(version string, reports map[string]guetzliReport, path string) {
 	b, err := json.Marshal(reports)
 	if err != nil {
 		panic(err)
