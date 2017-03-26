@@ -12,10 +12,12 @@ This requires : [Guetzli](https://github.com/google/guetzli)
 
 ```
 Flags:
-      --help        Show context-sensitive help (also try --help-long and --help-man).
-  -q, --quality=84  Quality in units equivalent to libjpeg quality
-  -v, --verbose     Verbose mode
-  -t, --threads=3   Max concurrent threads
+      --help           Show context-sensitive help (also try --help-long and --help-man).
+  -q, --quality=84     Quality in units equivalent to libjpeg quality
+  -v, --verbose        Verbose mode
+  -f, --force          Force recompression
+      --force-quality  Force recompression if quality changed
+  -t, --threads=3      Max concurrent threads
 
 Args:
   [<source>]  Source directory

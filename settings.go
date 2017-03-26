@@ -10,6 +10,8 @@ import (
 func parseArgs() *settings {
 	quality := kingpin.Flag("quality", "Quality in units equivalent to libjpeg quality").Short('q').Default("84").Int()
 	verbose := kingpin.Flag("verbose", "Verbose mode").Short('v').Bool()
+	force := kingpin.Flag("force", "Force recompression").Short('f').Bool()
+	forceQuality := kingpin.Flag("force-quality", "Force recompression if quality changed").Bool()
 	maxThreads := kingpin.Flag("threads", "Max concurrent threads").Short('t').Default("3").Int()
 
 	source := kingpin.Arg("source", "Source directory").Default("./").String()
@@ -31,8 +33,10 @@ func parseArgs() *settings {
 	*source = strings.TrimSuffix(*source, "/") + "/"
 
 	s := &settings{
-		quality: *quality,
-		verbose: *verbose,
+		quality:      *quality,
+		force:        *force,
+		forceQuality: *forceQuality,
+		verbose:      *verbose,
 
 		log:    *log,
 		output: *output,
@@ -46,14 +50,19 @@ func parseArgs() *settings {
 		fmt.Printf("Source   =>  %s\n", s.source)
 		fmt.Printf("Output   =>  %s\n", s.output)
 		fmt.Printf("Log      =>  %s\n", s.log)
+		fmt.Printf("Force    =>  %t\n", s.force)
+		fmt.Printf("Force Q  =>  %t\n", s.forceQuality)
+		fmt.Printf("Threads  =>  %d\n", s.maxThreads)
 	}
 
 	return s
 }
 
 type settings struct {
-	quality int
-	verbose bool
+	quality      int
+	force        bool
+	forceQuality bool
+	verbose      bool
 
 	log    string
 	output string

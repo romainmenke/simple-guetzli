@@ -5,7 +5,7 @@ func needsProc(j *job) bool {
 	var imgChanged bool
 	var settingsChanged bool
 
-	if j.report.Empty() {
+	if j.report.Empty() || j.settings.force {
 		settingsChanged = true
 		imgChanged = true
 	}
@@ -13,10 +13,10 @@ func needsProc(j *job) bool {
 	// if !j.report.Empty() && j.report.Version != j.settings.version {
 	// 	settingsChanged = true
 	// }
-	//
-	// if !j.report.Empty() && j.report.Quality != j.settings.quality {
-	// 	settingsChanged = true
-	// }
+
+	if j.settings.forceQuality && !j.report.Empty() && j.report.Quality != j.settings.quality {
+		settingsChanged = true
+	}
 
 	modTime := timeModified(j.settings.source + j.fileName)
 	if !j.report.Empty() && !modTime.Equal(j.report.ModTime) {
