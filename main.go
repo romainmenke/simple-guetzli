@@ -58,17 +58,17 @@ FILE_ITERATOR:
 	}
 
 	jobsQueue := make(chan *job, len(jobs))
-
 	for _, j := range jobs {
 		jobsQueue <- j
 	}
+	close(jobsQueue)
 
 	var wg sync.WaitGroup
 	var cancels []chan bool
 	for i := 0; i < settings.maxThreads; i++ {
 		wg.Add(1)
-		go func() {
 
+		go func() {
 		JOB_QUEUE:
 			for j := range jobsQueue {
 
@@ -85,7 +85,7 @@ FILE_ITERATOR:
 						reports[j.report.Path] = j.report
 					}
 				case <-cancel:
-					j.quit <- true
+					close(j.quit)
 					break JOB_QUEUE
 				}
 			}

@@ -45,12 +45,14 @@ func do(j *job) {
 	if err != nil {
 		j.logger.log(errors.New(logForJob(j)(err.Error())))
 		j.done <- false
+		close(j.done)
 		return
 	}
 
 	done := make(chan error, 1)
 	go func() {
 		done <- cmd.Wait()
+		close(done)
 	}()
 
 	select {
@@ -61,14 +63,17 @@ func do(j *job) {
 		}
 		j.logger.log(logForJob(j)("- cancelled"))
 		j.done <- false
+		close(j.done)
 		break
 	case err := <-done:
 		if err != nil {
 			j.logger.log(errors.New(logForJob(j)(errb.String())))
 			j.done <- false
+			close(j.done)
 		} else {
 			j.logger.log(logForJob(j)(outb.String()))
 			j.done <- true
+			close(j.done)
 		}
 		break
 	}
