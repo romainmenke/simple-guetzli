@@ -4,6 +4,8 @@ A Guetzli compression helper
 
 `go get github.com/romainmenke/simple-guetzli`
 
+or download from the latest [release](https://github.com/romainmenke/simple-guetzli/releases).
+
 This requires : [Guetzli](https://github.com/google/guetzli)
 
 ---
