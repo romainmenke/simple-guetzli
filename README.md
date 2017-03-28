@@ -8,6 +8,28 @@ This requires : [Guetzli](https://github.com/google/guetzli)
 
 ---
 
+### Why?
+
+Guetzli is cpu intensive and waiting for builds / compiles /... is something we all like to avoid.
+This little tool keeps a log of compressed files and skips those that have already been done.
+
+Now you can safely watch a folder with images and compress only that what needs to be done.
+
+
+In short :
+
+- compresses an entire folder at once
+- executes compressions in parallel
+- tracks what has been compressed
+- determines file changes and recompresses
+
+Useful :
+
+- cancel at any time, finished compressions will not need to be redone.
+- manage max threads.
+
+---
+
 ### Options
 
 ```
@@ -29,24 +51,3 @@ Args:
 ```
 
 ---
-
-### Why?
-
-Guetzli is cpu intensive and waiting for builds / compiles /... is something we all like to avoid.
-This little tool keeps a log of compressed files and skips those that have already been done.
-
-Now you can safely watch a folder with images and compress only that what needs to be done.
-
-
-In short :
-
-- compresses an entire folder at once
-- executes compressions in parallel
-- tracks what has been compressed
-
-Useful :
-
-- cancel at any time, finished compressions will not need to be redone.
-- manage max threads.
-
-Enjoy!
