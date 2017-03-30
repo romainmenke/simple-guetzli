@@ -1,60 +1,48 @@
 package main
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"os/signal"
 	"sync"
 	"syscall"
+	"time"
 
 	"github.com/mgutz/ansi"
 )
 
 func main() {
 
-	settings := parseArgs()
+	var (
+		settings   *settings
+		logger     *logger
+		reports    map[string]guetzliReport
+		newReports map[string]guetzliReport
+		jobs       []*job
+	)
+
+	settings = parseArgs()
 	settings = preflight(settings)
+	logger = newLogger(settings.verbose)
+	reports = getReports(settings.log)
+	jobs, newReports = getJobs(settings, reports, logger)
 
-	logger := newLogger(settings.verbose)
-
-	files, err := ioutil.ReadDir(settings.source)
-	if err != nil {
-		panic(err)
+	if len(jobs) == 0 {
+		return
 	}
 
-	reports := getReports(settings.log)
+	settings = adjustSettingsBasedOnJobs(settings, len(jobs))
 
-	version, err := guetzliVersion()
-	if err != nil {
-		panic(err)
-	}
-
-	jobs := []*job{}
-
-FILE_ITERATOR:
-	for index, f := range files {
-		if !isFile(settings.source + f.Name()) {
-			continue FILE_ITERATOR
+	if settings.force {
+		saveReports(settings.version, newReports, settings.log)
+	} else if settings.forceQuality {
+		for path, r := range reports {
+			if r.Quality == settings.quality {
+				newReports[path] = r
+			}
 		}
-
-		j := &job{
-			fileName: f.Name(),
-			report:   reports[settings.source+f.Name()],
-			settings: settings,
-			quit:     make(chan bool, 1),
-			done:     make(chan bool, 1),
-			logger:   logger,
-		}
-
-		j.color = ansi.ColorFunc(colors[index%len(colors)])
-
-		if !needsProc(j) {
-			reports[j.report.Path] = j.report
-			j.logger.log(logForJob(j)("- skipped"))
-			continue FILE_ITERATOR
-		}
-
-		jobs = append(jobs, j)
+		saveReports(settings.version, newReports, settings.log)
 	}
 
 	jobsQueue := make(chan *job, len(jobs))
@@ -82,7 +70,7 @@ FILE_ITERATOR:
 				select {
 				case success := <-j.done:
 					if success {
-						reports[j.report.Path] = j.report
+						newReports[j.report.Path] = j.report
 					}
 				case <-cancel:
 					close(j.quit)
@@ -104,5 +92,44 @@ FILE_ITERATOR:
 
 	wg.Wait()
 
-	saveReports(version, reports, settings.log)
+	saveReports(settings.version, newReports, settings.log)
+}
+
+func getJobs(settings *settings, reports map[string]guetzliReport, logger *logger) ([]*job, map[string]guetzliReport) {
+
+	newReports := make(map[string]guetzliReport)
+
+	files, err := ioutil.ReadDir(settings.source)
+	if err != nil {
+		panic(err)
+	}
+
+	jobs := []*job{}
+FILE_ITERATOR:
+	for index, f := range files {
+		if !isFile(settings.source + f.Name()) {
+			continue FILE_ITERATOR
+		}
+
+		j := &job{
+			fileName: f.Name(),
+			report:   reports[settings.source+f.Name()],
+			settings: settings,
+			quit:     make(chan bool, 1),
+			done:     make(chan bool, 1),
+			logger:   logger,
+		}
+
+		j.color = ansi.ColorFunc(colors[index%len(colors)])
+
+		if !needsProc(j) {
+			newReports[j.report.Path] = j.report
+			fmt.Printf("%s %s : \n- skipped\n", time.Now().Format("15:04:05"), j.settings.source+j.fileName)
+			continue FILE_ITERATOR
+		}
+
+		jobs = append(jobs, j)
+	}
+
+	return jobs, newReports
 }

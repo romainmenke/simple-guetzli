@@ -48,6 +48,12 @@ var colors = []string{
 	"blue",
 	"magenta",
 	"cyan",
+	"red+h",
+	"green+h",
+	"yellow+h",
+	"blue+h",
+	"magenta+h",
+	"cyan+h",
 }
 
 func logForJob(j *job) func(string) string {

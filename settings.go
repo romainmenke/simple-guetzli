@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"runtime"
 	"strings"
 
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
@@ -36,7 +37,7 @@ func parseArgs() *settings {
 	forceQuality := kingpin.Flag("force-quality", "Force recompression if quality changed").
 		Bool()
 
-	maxThreads := kingpin.Flag("threads", fmt.Sprintf("Max concurrent threads. Default limit is %d", defaultMaxThreads)).
+	maxThreads := kingpin.Flag("threads", fmt.Sprintf("Max concurrent threads. Default limit is %d", maxParallelism()-1)).
 		Short('t').
 		Default(fmt.Sprint(defaultMaxThreads)).
 		Uint()
@@ -98,18 +99,6 @@ func parseArgs() *settings {
 		maxThreads: int(*maxThreads),
 	}
 
-	if s.verbose {
-		fmt.Printf("Quality     =>  %d\n", s.quality)
-		fmt.Printf("NoMemLimit  =>  %t\n", s.nomemlimit)
-		fmt.Printf("MemLimit    =>  %d\n", s.memlimit)
-		fmt.Printf("Source      =>  %s\n", s.source)
-		fmt.Printf("Output      =>  %s\n", s.output)
-		fmt.Printf("Log         =>  %s\n", s.log)
-		fmt.Printf("Force       =>  %t\n", s.force)
-		fmt.Printf("Force Q     =>  %t\n", s.forceQuality)
-		fmt.Printf("Threads     =>  %d\n", s.maxThreads)
-	}
-
 	return s
 }
 
@@ -129,4 +118,13 @@ type settings struct {
 
 	version    string
 	maxThreads int
+}
+
+func maxParallelism() int {
+	maxProcs := runtime.GOMAXPROCS(0)
+	numCPU := runtime.NumCPU()
+	if maxProcs < numCPU {
+		return maxProcs
+	}
+	return numCPU
 }

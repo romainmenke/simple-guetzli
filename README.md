@@ -29,6 +29,7 @@ Useful :
 
 - cancel at any time, finished compressions will not need to be redone.
 - manage max threads.
+- max memory is divided by number of Guetzli instances (so 1000mb ram with 4 threads will give 250mb ram for each)
 
 ---
 
@@ -43,7 +44,7 @@ Flags:
       --nomemlimit     Do not limit memory usage.
   -f, --force          Force recompression
       --force-quality  Force recompression if quality changed
-  -t, --threads=3      Max concurrent threads. Default limit is 3
+  -t, --threads=3      Max concurrent threads. Default limit is the number of threads for the cpu minus 1
   -v, --version        Guetzli Version
 
 Args:
