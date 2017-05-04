@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"os/signal"
@@ -92,6 +93,11 @@ func main() {
 
 	wg.Wait()
 
+	err := copy(settings)
+	if err != nil {
+		fmt.Println(err)
+	}
+
 	saveReports(settings.version, newReports, settings.log)
 }
 
@@ -132,4 +138,88 @@ FILE_ITERATOR:
 	}
 
 	return jobs, newReports
+}
+
+func compareResultSize(j *job) error {
+
+	if !isFile(j.settings.source + j.fileName) {
+		return nil
+	}
+	if !isFile(j.settings.output + j.fileName) {
+		return nil
+	}
+
+	originalInfo, err := os.Stat(j.settings.source + j.fileName)
+	if err != nil {
+		return err
+	}
+
+	resultInfo, err := os.Stat(j.settings.output + j.fileName)
+	if err != nil {
+		return err
+	}
+
+	if originalInfo.Size() > resultInfo.Size() {
+		return nil
+	}
+
+	j.logger.log(logForJob(j)(fmt.Sprintf("- grew form %dkb to %dkb", (originalInfo.Size() / 1024), (resultInfo.Size() / 1024))))
+
+	if !j.settings.dontGrow {
+		return nil
+	}
+
+	j.logger.log(logForJob(j)("- deleting the oversized file"))
+
+	err = os.Remove(j.settings.output + j.fileName)
+	if err != nil {
+		return err
+	}
+
+	return nil
+
+}
+
+func copy(settings *settings) error {
+
+	files, err := ioutil.ReadDir(settings.source)
+	if err != nil {
+		panic(err)
+	}
+
+FILE_ITERATOR:
+	for _, f := range files {
+		if !isFile(settings.source + f.Name()) {
+			continue FILE_ITERATOR
+		}
+		if exists(settings.output + f.Name()) {
+			continue FILE_ITERATOR
+		}
+
+		originalFile, err := os.Open(settings.source + f.Name())
+		if err != nil {
+			return err
+		}
+		defer originalFile.Close()
+
+		resultFile, err := os.Create(settings.output + f.Name())
+		if err != nil {
+			return err
+		}
+		defer resultFile.Close()
+
+		_, err = io.Copy(resultFile, originalFile)
+		if err != nil {
+			return err
+		}
+
+		err = resultFile.Sync()
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	return nil
 }

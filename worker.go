@@ -77,6 +77,12 @@ func do(j *job) {
 			close(j.done)
 		} else {
 			j.logger.log(logForJob(j)(outb.String()))
+
+			err := compareResultSize(j)
+			if err != nil {
+				j.logger.log(errors.New(logForJob(j)(err.Error())))
+			}
+
 			j.done <- true
 			close(j.done)
 		}

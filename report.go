@@ -107,3 +107,11 @@ func isFile(path string) bool {
 	}
 	return !fileInfo.IsDir()
 }
+
+func exists(path string) bool {
+	_, err := os.Stat(path)
+	if err != nil {
+		return os.IsNotExist(err)
+	}
+	return true
+}

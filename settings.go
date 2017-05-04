@@ -42,6 +42,15 @@ func parseArgs() *settings {
 		Default(fmt.Sprint(defaultMaxThreads)).
 		Uint()
 
+	dontGrow := kingpin.Flag("dontgrow", "Delete compressed files that got bigger").
+		Default("true").
+		Short('g').
+		Bool()
+
+	copy := kingpin.Flag("copy", "Copy all files from source folder to output, without overwriting compression results").
+		Short('c').
+		Bool()
+
 	source := kingpin.Arg("source", "Source directory").
 		Default("./").
 		String()
@@ -97,6 +106,9 @@ func parseArgs() *settings {
 		source: *source,
 
 		maxThreads: int(*maxThreads),
+
+		dontGrow: *dontGrow,
+		copy:     *copy,
 	}
 
 	return s
@@ -118,6 +130,9 @@ type settings struct {
 
 	version    string
 	maxThreads int
+
+	dontGrow bool
+	copy     bool
 }
 
 func maxParallelism() int {

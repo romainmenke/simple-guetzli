@@ -39,6 +39,8 @@ func adjustSettingsBasedOnJobs(s *settings, numberOfJobs int) *settings {
 		fmt.Printf("Force       =>  %t\n", s.force)
 		fmt.Printf("Force Q     =>  %t\n", s.forceQuality)
 		fmt.Printf("Threads     =>  %d\n", s.maxThreads)
+		fmt.Printf("Dont Grow   =>  %t\n", s.dontGrow)
+		fmt.Printf("Copy        =>  %t\n", s.copy)
 		fmt.Printf("Version     =>  %s\n", s.version)
 	}
 
