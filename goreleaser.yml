@@ -1,7 +1,7 @@
 # goreleaser.yml
 # Build customization
 build:
-  main: ./...
+  main: .
   binary: simple-guetzli
   goos:
     - windows
