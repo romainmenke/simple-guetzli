@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/signal"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -189,6 +190,9 @@ func copy(settings *settings) error {
 
 FILE_ITERATOR:
 	for _, f := range files {
+		if strings.HasPrefix(f.Name(), ".") {
+			continue FILE_ITERATOR
+		}
 		if !isFile(settings.source + f.Name()) {
 			continue FILE_ITERATOR
 		}
@@ -217,8 +221,6 @@ FILE_ITERATOR:
 		if err != nil {
 			return err
 		}
-
-		return nil
 	}
 
 	return nil
