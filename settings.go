@@ -43,7 +43,6 @@ func parseArgs() *settings {
 		Uint()
 
 	dontGrow := kingpin.Flag("dontgrow", "Delete compressed files that got bigger").
-		Default("true").
 		Short('g').
 		Bool()
 
