@@ -74,6 +74,9 @@ func main() {
 					if success {
 						newReports[j.report.Path] = j.report
 					}
+
+					after(j)
+
 				case <-cancel:
 					close(j.quit)
 					break JOB_QUEUE
@@ -93,11 +96,6 @@ func main() {
 	}()
 
 	wg.Wait()
-
-	err := copy(settings)
-	if err != nil {
-		fmt.Println(err)
-	}
 
 	saveReports(settings.version, newReports, settings.log)
 }
@@ -141,7 +139,26 @@ FILE_ITERATOR:
 	return jobs, newReports
 }
 
-func compareResultSize(j *job) error {
+func after(j *job) {
+
+	if j.settings.dontGrow {
+		err := preventGrow(j)
+		if err != nil {
+			panic(err)
+			// j.logger.log(errors.New(logForJob(j)(err.Error())))
+		}
+	}
+
+	if j.settings.copy {
+		err := copy(j)
+		if err != nil {
+			panic(err)
+			// j.logger.log(errors.New(logForJob(j)(err.Error())))
+		}
+	}
+}
+
+func preventGrow(j *job) error {
 
 	if !isFile(j.settings.source + j.fileName) {
 		return nil
@@ -170,6 +187,7 @@ func compareResultSize(j *job) error {
 		return nil
 	}
 
+	j.errored = true
 	j.logger.log(logForJob(j)("- deleting the oversized file"))
 
 	err = os.Remove(j.settings.output + j.fileName)
@@ -181,47 +199,54 @@ func compareResultSize(j *job) error {
 
 }
 
-func copy(settings *settings) error {
+func copy(j *job) error {
 
-	files, err := ioutil.ReadDir(settings.source)
+	// must have errored
+	// not a killed
+	if !j.errored {
+		return nil
+	}
+
+	var (
+		err          error
+		originalFile *os.File
+		resultFile   *os.File
+	)
+
+	if strings.HasPrefix(j.fileName, ".") {
+		return nil
+	}
+	if !isFile(j.settings.source + j.fileName) {
+		return nil
+	}
+
+	if exists(j.settings.output+j.fileName) && sha1ForFile(j.settings.output+j.fileName) == sha1ForFile(j.settings.source+j.fileName) {
+		return nil
+	}
+
+	originalFile, err = os.Open(j.settings.source + j.fileName)
 	if err != nil {
-		panic(err)
+		return err
+	}
+	defer originalFile.Close()
+
+	resultFile, err = os.Create(j.settings.output + j.fileName)
+	if err != nil {
+		return err
+	}
+	defer resultFile.Close()
+
+	_, err = io.Copy(resultFile, originalFile)
+	if err != nil {
+		return err
 	}
 
-FILE_ITERATOR:
-	for _, f := range files {
-		if strings.HasPrefix(f.Name(), ".") {
-			continue FILE_ITERATOR
-		}
-		if !isFile(settings.source + f.Name()) {
-			continue FILE_ITERATOR
-		}
-		if exists(settings.output + f.Name()) {
-			continue FILE_ITERATOR
-		}
-
-		originalFile, err := os.Open(settings.source + f.Name())
-		if err != nil {
-			return err
-		}
-		defer originalFile.Close()
-
-		resultFile, err := os.Create(settings.output + f.Name())
-		if err != nil {
-			return err
-		}
-		defer resultFile.Close()
-
-		_, err = io.Copy(resultFile, originalFile)
-		if err != nil {
-			return err
-		}
-
-		err = resultFile.Sync()
-		if err != nil {
-			return err
-		}
+	err = resultFile.Sync()
+	if err != nil {
+		return err
 	}
+
+	j.logger.log(logForJob(j)("- copied"))
 
 	return nil
 }

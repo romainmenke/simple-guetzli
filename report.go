@@ -5,7 +5,6 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -102,7 +101,6 @@ func writeFile(content []byte, fileName string, out string, quality int) {
 func isFile(path string) bool {
 	fileInfo, err := os.Stat(path)
 	if err != nil {
-		fmt.Println(err)
 		return false
 	}
 	return !fileInfo.IsDir()

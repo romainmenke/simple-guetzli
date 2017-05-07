@@ -13,6 +13,7 @@ type job struct {
 	settings *settings
 	color    colorFunc
 	logger   *logger
+	errored  bool
 	quit     chan bool
 	done     chan bool
 }
@@ -49,6 +50,7 @@ func do(j *job) {
 	err := cmd.Start()
 	if err != nil {
 		j.logger.log(errors.New(logForJob(j)(err.Error())))
+		j.errored = true
 		j.done <- false
 		close(j.done)
 		return
@@ -72,17 +74,12 @@ func do(j *job) {
 		break
 	case err := <-done:
 		if err != nil {
+			j.errored = true
 			j.logger.log(errors.New(logForJob(j)(errb.String())))
 			j.done <- false
 			close(j.done)
 		} else {
 			j.logger.log(logForJob(j)(outb.String()))
-
-			err := compareResultSize(j)
-			if err != nil {
-				j.logger.log(errors.New(logForJob(j)(err.Error())))
-			}
-
 			j.done <- true
 			close(j.done)
 		}
