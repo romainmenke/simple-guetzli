@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -16,17 +17,56 @@ import (
 
 func main() {
 
+	settings := parseArgs()
+	if settings == nil {
+		return
+	}
+	logger := newLogger(settings.verbose)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	quit := make(chan struct{})
+
+	var ticker *time.Ticker
+
+	if settings.interval > 0 {
+		ticker = time.NewTicker(time.Second * time.Duration(settings.interval))
+	}
+
+	signalChannel := make(chan os.Signal, 2)
+	signal.Notify(signalChannel, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		_ = <-signalChannel
+		if ticker != nil {
+			ticker.Stop()
+		}
+
+		cancel()
+		time.Sleep(time.Second)
+		close(quit)
+	}()
+
+	if settings.interval > 0 {
+		for {
+			select {
+			case <-ticker.C:
+				runOnce(ctx, settings, logger)
+			case <-quit:
+				return
+			}
+		}
+	}
+}
+
+func runOnce(ctx context.Context, settings *settings, logger *logger) {
+
 	var (
-		settings   *settings
-		logger     *logger
 		reports    map[string]guetzliReport
 		newReports map[string]guetzliReport
 		jobs       []*job
 	)
 
-	settings = parseArgs()
-	settings = preflight(settings)
-	logger = newLogger(settings.verbose)
 	reports = getReports(settings.log)
 	jobs, newReports = getJobs(settings, reports, logger)
 
@@ -86,10 +126,8 @@ func main() {
 		}()
 	}
 
-	signalChannel := make(chan os.Signal, 2)
-	signal.Notify(signalChannel, os.Interrupt, syscall.SIGTERM)
 	go func() {
-		_ = <-signalChannel
+		<-ctx.Done()
 		for _, c := range cancels {
 			close(c)
 		}
@@ -113,6 +151,10 @@ func getJobs(settings *settings, reports map[string]guetzliReport, logger *logge
 FILE_ITERATOR:
 	for index, f := range files {
 		if !isFile(settings.source + f.Name()) {
+			continue FILE_ITERATOR
+		}
+
+		if strings.HasPrefix(f.Name(), ".") {
 			continue FILE_ITERATOR
 		}
 

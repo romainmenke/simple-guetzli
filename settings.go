@@ -62,6 +62,11 @@ func parseArgs() *settings {
 		Default("").
 		String()
 
+	interval := kingpin.Flag("interval", "").
+		Short('i').
+		Hidden().
+		Int()
+
 	version := kingpin.Flag("version", "Guetzli Version").Short('v').Bool()
 
 	_ = memlimit
@@ -108,6 +113,8 @@ func parseArgs() *settings {
 
 		dontGrow: *dontGrow,
 		copy:     *copy,
+
+		interval: *interval,
 	}
 
 	return s
@@ -132,6 +139,8 @@ type settings struct {
 
 	dontGrow bool
 	copy     bool
+
+	interval int
 }
 
 func maxParallelism() int {
