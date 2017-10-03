@@ -21,30 +21,33 @@ func preflight(s *settings) *settings {
 
 func adjustSettingsBasedOnJobs(s *settings, numberOfJobs int) *settings {
 
-	if s.maxThreads > numberOfJobs && numberOfJobs > 0 {
+	var new *settings
+	*new = *s
+
+	if new.maxThreads > numberOfJobs && numberOfJobs > 0 {
 		s.maxThreads = numberOfJobs
 	}
 
-	originalMemLimit := s.memlimit
-	adjustedMemLimit := s.memlimit / s.maxThreads
-	s.memlimit = s.memlimit / s.maxThreads
+	originalMemLimit := new.memlimit
+	adjustedMemLimit := new.memlimit / new.maxThreads
+	s.memlimit = new.memlimit / new.maxThreads
 
-	if s.verbose {
-		fmt.Printf("Quality     =>  %d\n", s.quality)
-		fmt.Printf("NoMemLimit  =>  %t\n", s.nomemlimit)
-		fmt.Printf("MemLimit    =>  %d / %d => %d\n", originalMemLimit, s.maxThreads, adjustedMemLimit)
-		fmt.Printf("Source      =>  %s\n", s.source)
-		fmt.Printf("Output      =>  %s\n", s.output)
-		fmt.Printf("Log         =>  %s\n", s.log)
-		fmt.Printf("Force       =>  %t\n", s.force)
-		fmt.Printf("Force Q     =>  %t\n", s.forceQuality)
-		fmt.Printf("Threads     =>  %d\n", s.maxThreads)
-		fmt.Printf("Dont Grow   =>  %t\n", s.dontGrow)
-		fmt.Printf("Copy        =>  %t\n", s.copy)
-		fmt.Printf("Version     =>  %s\n", s.version)
+	if new.verbose {
+		fmt.Printf("Quality     =>  %d\n", new.quality)
+		fmt.Printf("NoMemLimit  =>  %t\n", new.nomemlimit)
+		fmt.Printf("MemLimit    =>  %d / %d => %d\n", originalMemLimit, new.maxThreads, adjustedMemLimit)
+		fmt.Printf("Source      =>  %s\n", new.source)
+		fmt.Printf("Output      =>  %s\n", new.output)
+		fmt.Printf("Log         =>  %s\n", new.log)
+		fmt.Printf("Force       =>  %t\n", new.force)
+		fmt.Printf("Force Q     =>  %t\n", new.forceQuality)
+		fmt.Printf("Threads     =>  %d\n", new.maxThreads)
+		fmt.Printf("Dont Grow   =>  %t\n", new.dontGrow)
+		fmt.Printf("Copy        =>  %t\n", new.copy)
+		fmt.Printf("Version     =>  %s\n", new.version)
 	}
 
-	return s
+	return new
 
 }
 
