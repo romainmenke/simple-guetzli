@@ -56,6 +56,8 @@ func main() {
 				return
 			}
 		}
+	} else {
+		runOnce(ctx, settings, logger)
 	}
 }
 

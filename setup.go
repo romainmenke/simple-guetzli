@@ -21,8 +21,8 @@ func preflight(s *settings) *settings {
 
 func adjustSettingsBasedOnJobs(s *settings, numberOfJobs int) *settings {
 
-	var new *settings
-	*new = *s
+	new := settings{}
+	new = *s
 
 	if new.maxThreads > numberOfJobs && numberOfJobs > 0 {
 		s.maxThreads = numberOfJobs
@@ -47,7 +47,7 @@ func adjustSettingsBasedOnJobs(s *settings, numberOfJobs int) *settings {
 		fmt.Printf("Version     =>  %s\n", new.version)
 	}
 
-	return new
+	return &new
 
 }
 
