@@ -6,14 +6,14 @@ import (
 )
 
 type logger struct {
-	pipe    chan interface{}
-	verbose bool
+	pipe     chan interface{}
+	logLevel string
 }
 
-func newLogger(verbose bool) *logger {
+func newLogger(logLevel string) *logger {
 	l := &logger{
-		pipe:    make(chan interface{}),
-		verbose: verbose,
+		pipe:     make(chan interface{}),
+		logLevel: logLevel,
 	}
 
 	go func() {
@@ -22,7 +22,7 @@ func newLogger(verbose bool) *logger {
 			case error:
 				fmt.Println(s)
 			default:
-				if l.verbose {
+				if l.logLevel != "" {
 					fmt.Println(s)
 				}
 			}

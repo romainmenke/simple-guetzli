@@ -25,14 +25,14 @@ func adjustSettingsBasedOnJobs(s *settings, numberOfJobs int) *settings {
 	new = *s
 
 	if new.maxThreads > numberOfJobs && numberOfJobs > 0 {
-		s.maxThreads = numberOfJobs
+		new.maxThreads = numberOfJobs
 	}
 
 	originalMemLimit := new.memlimit
 	adjustedMemLimit := new.memlimit / new.maxThreads
 	s.memlimit = new.memlimit / new.maxThreads
 
-	if new.verbose {
+	if new.logLevel == "info" || new.logLevel == "debug" {
 		fmt.Printf("Quality     =>  %d\n", new.quality)
 		fmt.Printf("NoMemLimit  =>  %t\n", new.nomemlimit)
 		fmt.Printf("MemLimit    =>  %d / %d => %d\n", originalMemLimit, new.maxThreads, adjustedMemLimit)

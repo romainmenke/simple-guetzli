@@ -21,7 +21,7 @@ func main() {
 	if settings == nil {
 		return
 	}
-	logger := newLogger(settings.verbose)
+	logger := newLogger(settings.logLevel)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

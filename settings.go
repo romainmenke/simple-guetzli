@@ -19,8 +19,9 @@ func parseArgs() *settings {
 		Default(fmt.Sprint(defaultJPEGQuality)).
 		Uint()
 
-	verbose := kingpin.Flag("verbose", "Print a verbose trace of all attempts to standard output.").
-		Bool()
+	logLevel := kingpin.Flag("log", "Log level").
+		Default("info").
+		String()
 
 	memlimit := kingpin.Flag("memlimit", fmt.Sprintf("Memory limit in MB. Guetzli will fail if unable to stay under the limit. Default limit is %d", defaultMemlimitMB)).
 		Short('m').
@@ -96,8 +97,8 @@ func parseArgs() *settings {
 	*source = strings.TrimSuffix(*source, "/") + "/"
 
 	s := &settings{
-		quality: int(*quality),
-		verbose: *verbose,
+		quality:  int(*quality),
+		logLevel: *logLevel,
 
 		memlimit:   int(*memlimit),
 		nomemlimit: *nomemlimit,
@@ -121,8 +122,8 @@ func parseArgs() *settings {
 }
 
 type settings struct {
-	quality int
-	verbose bool
+	quality  int
+	logLevel string
 
 	memlimit   int
 	nomemlimit bool

@@ -34,7 +34,7 @@ func do(j *job) {
 	if j.settings.nomemlimit {
 		args = append(args, "--nomemlimit")
 	}
-	if j.settings.verbose {
+	if j.settings.logLevel == "debug" {
 		args = append(args, "--verbose")
 	}
 
