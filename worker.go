@@ -41,7 +41,10 @@ func do(j *job) {
 	}
 
 	outputFileName := j.fileName
-	outputFileName = strings.TrimSuffix(strings.TrimSuffix(outputFileName, filepath.Ext(outputFileName)), ".") + ".jpg"
+
+	if j.settings.source != j.settings.output {
+		outputFileName = strings.TrimSuffix(strings.TrimSuffix(outputFileName, filepath.Ext(outputFileName)), ".") + ".jpg"
+	}
 
 	args = append(args, j.settings.source+j.fileName)
 	args = append(args, j.settings.output+outputFileName)
