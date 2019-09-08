@@ -58,6 +58,6 @@ var colors = []string{
 
 func logForJob(j *job) func(string) string {
 	return func(s string) string {
-		return j.color(fmt.Sprintf("%s %s : \n%s", time.Now().Format("15:04:05"), j.settings.source+j.fileName, s))
+		return j.color(fmt.Sprintf("%s %s :\n  - %s", time.Now().Format("15:04:05"), j.settings.source+j.fileName, s))
 	}
 }

@@ -225,14 +225,14 @@ func preventGrow(j *job) error {
 		return nil
 	}
 
-	j.logger.log(logForJob(j)(fmt.Sprintf("- grew form %dkb to %dkb", (originalInfo.Size() / 1024), (resultInfo.Size() / 1024))))
+	j.logger.log(logForJob(j)(fmt.Sprintf("grew form %dkb to %dkb", (originalInfo.Size() / 1024), (resultInfo.Size() / 1024))))
 
 	if !j.settings.dontGrow {
 		return nil
 	}
 
 	j.errored = true
-	j.logger.log(logForJob(j)("- deleting the oversized file"))
+	j.logger.log(logForJob(j)("deleting the oversized file"))
 
 	err = os.Remove(j.settings.output + j.fileName)
 	if err != nil {
@@ -244,7 +244,6 @@ func preventGrow(j *job) error {
 }
 
 func copy(j *job) error {
-
 	// must have errored
 	// not a killed
 	if !j.errored {
@@ -290,7 +289,7 @@ func copy(j *job) error {
 		return err
 	}
 
-	j.logger.log(logForJob(j)("- copied"))
+	j.logger.log(logForJob(j)("copied original"))
 
 	return nil
 }

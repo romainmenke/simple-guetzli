@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"os/exec"
+	"path/filepath"
+	"strings"
 )
 
 type job struct {
@@ -38,15 +40,20 @@ func do(j *job) {
 		args = append(args, "--verbose")
 	}
 
+	outputFileName := j.fileName
+	outputFileName = strings.TrimSuffix(strings.TrimSuffix(outputFileName, filepath.Ext(outputFileName)), ".") + ".jpg"
+
 	args = append(args, j.settings.source+j.fileName)
-	args = append(args, j.settings.output+j.fileName)
+	args = append(args, j.settings.output+outputFileName)
+
+	j.fileName = outputFileName
 
 	cmd := exec.Command("guetzli", args...)
 
 	cmd.Stdout = &outb
 	cmd.Stderr = &errb
 
-	j.logger.log(logForJob(j)("- start"))
+	j.logger.log(logForJob(j)("start"))
 	err := cmd.Start()
 	if err != nil {
 		j.logger.log(errors.New(logForJob(j)(err.Error())))
@@ -68,7 +75,7 @@ func do(j *job) {
 		if err != nil {
 			j.logger.log(errors.New(logForJob(j)(err.Error())))
 		}
-		j.logger.log(logForJob(j)("- cancelled"))
+		j.logger.log(logForJob(j)("cancelled"))
 		j.done <- false
 		close(j.done)
 		break
@@ -79,7 +86,11 @@ func do(j *job) {
 			j.done <- false
 			close(j.done)
 		} else {
-			j.logger.log(logForJob(j)(outb.String()))
+			doneMsg := outb.String()
+			if doneMsg == "" {
+				doneMsg = "done"
+			}
+			j.logger.log(logForJob(j)(doneMsg))
 			j.done <- true
 			close(j.done)
 		}
